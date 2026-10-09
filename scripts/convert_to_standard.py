@@ -142,6 +142,23 @@ def compliance_replace(text: str) -> tuple[str, list[dict]]:
     return cleaned, hits
 
 
+# Engineering metrics (px/frame, Hz, optical-flow, grayscale deltas, ROI percentages…)
+# belong in the internal SPEC / motion_analysis blocks for human review only. They
+# must never leak into the model-facing prompt. This guard detects leftovers.
+_ENG_UNIT_RE = re.compile(
+    r"px/?帧|帧/秒|/\s*255|灰度|光流|画高|净位移|累计路径|相邻帧|非刚性|"
+    r"\b\d+(\.\d+)?\s*px\b|Hz|毫秒|fps|像素差|帧差",
+    re.I,
+)
+
+
+def warn_engineering_units(text: str, label: str) -> None:
+    """Print a warning if the model-facing text still carries engineering metrics."""
+    hits = sorted(set(_ENG_UNIT_RE.findall(text)))
+    if hits:
+        print(f"WARNING: {label} 仍含工程单位/指标: {hits}")
+
+
 # ---------------------------------------------------------------------------
 # Field mapping helpers
 # ---------------------------------------------------------------------------
@@ -314,21 +331,19 @@ def build_timeline(spec: dict, global_narrative: str = "") -> str:
         lighting_change = shot.get("lighting_change", "").strip() or "无可见变化"
         env_motion = f"环境光{lighting_change}，背景元素保持稳定无闪烁"
         if "美颜" in (shot.get("effects", "") or ""):
-            effect_motion = "美颜滤镜带来面部与发丝的细微非刚性形变"
+            effect_motion = "美颜滤镜带来面部与发丝的柔和微调"
         else:
             effect_motion = "画面细节随动作自然变化"
         segments = _parse_time_segments(shot)
-        motion_trajectory = shot.get("motion_trajectory", "").strip()
         for idx, seg in enumerate(segments):
             start, end, text = seg["start"], seg["end"], seg["text"]
             # Weave subject action with environment/background/effect motion cues.
+            # NOTE: motion_trajectory (engineering metrics) lives only in the
+            # internal SPEC/motion_analysis blocks and must NEVER reach the model.
             seg_text = (
                 f"{_fmt_ts(start)}-{_fmt_ts(end)}秒：{jingbie}，{yunjing}（{transition}），"
                 f"{text}；{env_motion}，{effect_motion}"
             )
-            # The whole-body bounce is continuous; note it once on the first segment.
-            if idx == 0 and motion_trajectory:
-                seg_text += f"；{motion_trajectory}"
             seg_text += f"；{sound}" if sound else ""
             lines.append(seg_text)
         # Opening / ending frames as boundary notes.
@@ -393,9 +408,7 @@ def build_sound_block(shot: dict) -> str:
 
 
 def build_reference_block(spec: dict) -> str:
-    source = spec.get("source", {})
-    sha = source.get("sha256", "")[:8]
-    return f"【参考】@视频1 原视频（sha256前8位 {sha}）参考运镜与拍摄视角；可按需补充角色图/场景图参考"
+    return "【参考】@视频1 原视频参考运镜与拍摄视角；可按需补充角色图/场景图参考"
 
 
 def build_standard_prompt(spec: dict) -> str:
@@ -515,6 +528,9 @@ def main(argv: list[str]) -> int:
 
     zh = build_standard_prompt(spec)
     en = build_standard_prompt_en(spec)
+    # Guard: the model-facing prompt must be pure natural-language semantics.
+    warn_engineering_units(zh, "中文标准提示词")
+    warn_engineering_units(en, "English standard prompt")
     # build_standard_prompt already applied compliance to the positive sections;
     # recompute hits for the report by diffing against the un-cleaned positive part.
     positive_unclean = "\n\n".join([
