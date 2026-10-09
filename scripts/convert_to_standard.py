@@ -263,7 +263,14 @@ def build_style_line(global_data: dict, source: dict) -> str:
         style_phrase = "电影级写实风格"
     duration = float(source.get("duration_seconds", 0.0))
     ar = aspect_ratio(int(source.get("width", 0)), int(source.get("height", 0)))
-    atmosphere = "自信宣言氛围" if "宣言" in (global_data.get("narrative_logic", "") or "") else "自然真实氛围"
+    # 注意：本片为重度美颜/AI人像滤镜风格，"写实/真实" 会与"美颜柔肤质感"
+    # 约束相互打架，故风格氛围用中性、不与美颜冲突的措辞。
+    if "宣言" in (global_data.get("narrative_logic", "") or ""):
+        atmosphere = "自信宣言氛围"
+    elif "美颜" in visual_style or "AI人像" in visual_style:
+        atmosphere = "柔和自然光感氛围"
+    else:
+        atmosphere = "自然光感氛围"
     return f"【风格】{style_phrase}，{_fmt_ts(round(duration, 1))}秒，{ar}，{atmosphere}"
 
 
