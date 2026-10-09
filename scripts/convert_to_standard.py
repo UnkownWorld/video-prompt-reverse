@@ -164,10 +164,20 @@ def aspect_ratio(width: int, height: int) -> str:
 def shot_size_to_jingbie(shot_size: str) -> str:
     """Map a free-form shot-size string to the standard 景别 vocabulary."""
     text = shot_size or ""
-    # Order matters: longer / more specific terms must be tested before shorter ones.
-    for term in ("特写", "中近景", "近景", "全景", "中景", "远景", "主观视角"):
+    # Order matters: longer / more specific terms must be tested before shorter
+    # ones. "全身" (full body) maps to the standard 全景 label.
+    for term, label in (
+        ("特写", "特写"),
+        ("中近景", "中近景"),
+        ("近景", "近景"),
+        ("全身", "全景"),
+        ("全景", "全景"),
+        ("中景", "中景"),
+        ("远景", "远景"),
+        ("主观视角", "主观视角"),
+    ):
         if term in text:
-            return term
+            return label
     return "中景"
 
 
@@ -246,7 +256,7 @@ def build_style_line(global_data: dict, source: dict) -> str:
     # Pull a compact style phrase from the front of visual_style if present.
     style_phrase = "写实风格"
     if "美颜" in visual_style or "AI人像" in visual_style:
-        style_phrase = "AI美颜自拍风格"
+        style_phrase = "AI美颜人像风格"
     elif "动画" in visual_style:
         style_phrase = "动画风格"
     elif "电影" in visual_style:
@@ -292,8 +302,14 @@ def build_timeline(spec: dict, global_narrative: str = "") -> str:
         single_take = any(k in cam_text for k in ("无剪辑", "单镜头", "无转场"))
         transition = "无剪辑单镜头" if single_take else "硬切"
         sound = shot.get("sound_and_music", "").strip()
-        env_motion = "环境光均匀柔和，白墙与瓷砖墙脚线稳定无闪烁"
-        effect_motion = "美颜滤镜带来面部与发丝的细微非刚性形变"
+        # Derive environment/effect motion from the shot itself instead of
+        # hardcoding scene-specific wording (e.g. a previous video's wall).
+        lighting_change = shot.get("lighting_change", "").strip() or "无可见变化"
+        env_motion = f"环境光{lighting_change}，背景元素保持稳定无闪烁"
+        if "美颜" in (shot.get("effects", "") or ""):
+            effect_motion = "美颜滤镜带来面部与发丝的细微非刚性形变"
+        else:
+            effect_motion = "画面细节随动作自然变化"
         segments = _parse_time_segments(shot)
         motion_trajectory = shot.get("motion_trajectory", "").strip()
         for idx, seg in enumerate(segments):
@@ -372,7 +388,7 @@ def build_sound_block(shot: dict) -> str:
 def build_reference_block(spec: dict) -> str:
     source = spec.get("source", {})
     sha = source.get("sha256", "")[:8]
-    return f"【参考】@视频1 原视频（sha256前8位 {sha}）参考运镜与自拍视角；可按需补充角色图/场景图参考"
+    return f"【参考】@视频1 原视频（sha256前8位 {sha}）参考运镜与拍摄视角；可按需补充角色图/场景图参考"
 
 
 def build_standard_prompt(spec: dict) -> str:
