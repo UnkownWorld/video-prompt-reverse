@@ -199,7 +199,7 @@ def shot_size_to_jingbie(shot_size: str) -> str:
 
 
 _NEGATION_STRIP = re.compile(
-    r"无推拉|无拉|无推|无摇|无移|无环绕|无升降|不推|不拉|不摇|不移|不环绕|不升降|无持续俯仰平移|无俯仰平移|无平移"
+    r"无[推拉摇移环绕升降]{1,8}|无持续俯仰平移|无俯仰平移|无平移|不[推拉摇移环绕升降]|不环绕|不升降"
 )
 
 
@@ -209,6 +209,9 @@ def camera_motion_to_yunjing(camera_motion: str) -> str:
     Negated terms such as '无推拉' must NOT be read as positive motion.
     """
     text = _NEGATION_STRIP.sub("", camera_motion or "")
+    # "位移/漂移" describe physical drift, not a camera-move label; strip them
+    # so their "移" character is not misread as a positive move.
+    text = text.replace("位移", "").replace("漂移", "")
     labels = []
     if "推" in text:
         labels.append("推镜头")
