@@ -8,7 +8,7 @@
 
 `video-prompt-reverse` is a Codex skill for reverse-engineering a supplied video into a shot-by-shot generation specification, evidence frames, and paired Chinese-English prompt packages.
 
-It supports generic prompt adaptation and model-oriented workflows for Veo, Sora, Kling, and Wan. It focuses on semantic and cinematic similarity; text prompts alone cannot guarantee frame-identical reconstruction.
+It supports generic prompt adaptation and model-oriented workflows for Veo, Sora, Kling, Wan, and Seedance. It focuses on semantic and cinematic similarity; text prompts alone cannot guarantee frame-identical reconstruction.
 
 ### Install in Codex
 
@@ -37,7 +37,7 @@ For more AI and developer discussions, visit [Linux Do](https://linux.do/).
 
 `video-prompt-reverse` 是一个 Codex skill，用于将视频反向拆解为逐镜头生成规格、带证据的视频帧，以及中英文成对的提示词包。
 
-它支持通用提示词适配，并可面向 Veo、Sora、Kling 和 Wan 等模型工作。它侧重语义与电影感相似度；仅凭文字提示词无法保证逐帧一致的重建结果。
+它支持通用提示词适配，并可面向 Veo、Sora、Kling、Wan 与 Seedance 等模型工作。它侧重语义与电影感相似度；仅凭文字提示词无法保证逐帧一致的重建结果。
 
 ### 在 Codex 中安装
 
