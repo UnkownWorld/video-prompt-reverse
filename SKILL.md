@@ -61,6 +61,26 @@ For every request, return:
 
 Do not claim that a prompt is the source video's original prompt. Call it a reverse-engineered generation specification.
 
+## Convert to a standard prompt
+
+The compiled prompts are descriptive prose; many target platforms (notably Seedance 2.0) expect a stricter shape. Run the converter to reformat a SPEC into the standard storyboard-prompt layout and rewrite it through the sensitive-word compliance table.
+
+```text
+python scripts/convert_to_standard.py SPEC.json --output-dir OUTPUT --overwrite
+```
+
+The converter produces:
+
+- `standard_prompt_seedance_zh.txt` — standard Seedance 2.0 prompt in Chinese (primary deliverable)
+- `standard_prompt_seedance_en.txt` — same structure in English
+- `standard_prompt_seedance.json` — structured sections plus a `compliance_hits` report
+
+Standard layout (see [references/standard-prompt-conversion.md](references/standard-prompt-conversion.md)):
+
+- every segment in `[时间轴]` carries **景别 + 运镜/转场 + 画面元素运动 + 声音**;
+- the eight-module formula is preserved: **[风格] + [主体描述] + [场景环境] + [动作行为] + [镜头语言] + [光影氛围] + [风格参考] + [约束词]**;
+- the compliance pass replaces high-risk tokens (真实/真人/实拍, 品牌/logo, 裸露, 暴力与不良引导类) with compliant phrasing **only in positive sections**; negative constraints are kept verbatim so prohibitions stay readable.
+
 ## Optimize against a target model
 
 Read [references/optimization-loop.md](references/optimization-loop.md) before running external generation. Optimization requires one locked target model/version and explicit generator/evaluator command adapters. Preserve every candidate and score; do not delete weak or failed results.
